@@ -1,0 +1,11 @@
+Package: Martysbloodsugar
+Title: Collecting transforming and analysing blood sugar data from a 30-something 'healthy' male.
+Version: 0.1.0
+Authors@R: 
+    person("Márton", "Kiss", email = "mrkmarton@gmail.com", role = c("aut", "cre"))
+Description: Just messing around and getting a handle on version control.
+  Also unit tests, packages and such.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3

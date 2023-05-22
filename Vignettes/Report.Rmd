@@ -1,0 +1,155 @@
+---
+title: "Report"
+author: "Dr. Kiss Márton"
+date: "2023-05-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preface
+
+This document represents an 'output' for the project.
+
+```{r}
+# loading libraries
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+
+
+load(here::here("Export","xdrip_data.Rdata"))
+
+```
+
+
+```{r}
+
+# Overall results
+dat_out |>
+  ggplot( aes( x = datetim, y = glucose)) +
+  theme_minimal() +
+  geom_point()
+
+```
+
+```{r}
+# Days/times visualization
+dat_out |>
+  ggplot( aes( x = datetim, y = as.numeric(TIME), color = DAY)) +
+  geom_point()
+
+```
+
+```{r}
+
+# "Daily trend"
+dat_out |>
+  ggplot( aes( x = (as.numeric(TIME)/3600), y = glucose, color = DAY)) +
+  geom_point() +
+  geom_smooth(color = "red", se = FALSE) +
+  geom_smooth(color = "pink", method = "loess", span = .1, se = FALSE)
+
+```
+
+```{r}
+
+data_act <- 
+    dat_out |>
+      filter( is.na(remark_factor) == FALSE,
+              remark_factor %in% unique(remark_factor)[1:17]
+              ) |>
+      mutate( remark_factor = forcats::fct_drop(remark_factor)) 
+
+data_act |>
+  ggplot( aes( x = datetim, y = glucose, group = remark_factor)) +
+  theme_minimal() +
+  geom_point() +
+  geom_line() +
+  geom_vline(data = data_act |> 
+               group_by(remark_factor) |> 
+               slice(1),
+             mapping = aes( xintercept = datetim - minutes(delta_time_remark )),
+             color = "red"
+  ) +
+  facet_wrap( facets = "remark_factor", scales = "free")
+
+```
+
+
+```{r}
+
+data_act <- 
+    dat_out |>
+      filter( is.na(remark_factor) == FALSE,
+              remark_factor %in% unique(remark_factor)[18:33]
+              ) |>
+      mutate( remark_factor = forcats::fct_drop(remark_factor)) 
+
+data_act |>
+  ggplot( aes( x = datetim, y = glucose, group = remark_factor)) +
+  theme_minimal() +
+  geom_point() +
+  geom_line() +
+  geom_vline(data = data_act |> 
+               group_by(remark_factor) |> 
+               slice(1),
+             mapping = aes( xintercept = datetim - minutes(delta_time_remark )),
+             color = "red"
+  ) +
+  facet_wrap( facets = "remark_factor", scales = "free")
+
+```
+
+
+```{r}
+
+data_act <- 
+    dat_out |>
+      filter( is.na(remark_factor) == FALSE,
+              remark_factor %in% unique(remark_factor)[34:49]
+              ) |>
+      mutate( remark_factor = forcats::fct_drop(remark_factor)) 
+
+data_act |>
+  ggplot( aes( x = datetim, y = glucose, group = remark_factor)) +
+  theme_minimal() +
+  geom_point() +
+  geom_line() +
+  geom_vline(data = data_act |> 
+               group_by(remark_factor) |> 
+               slice(1),
+             mapping = aes( xintercept = datetim - minutes(delta_time_remark )),
+             color = "red"
+  ) +
+  facet_wrap( facets = "remark_factor", scales = "free")
+
+```
+
+
+
+```{r}
+
+data_act <- 
+    dat_out |>
+      filter( is.na(remark_factor) == FALSE,
+              remark_factor %in% unique(remark_factor)[50:59]
+              ) |>
+      mutate( remark_factor = forcats::fct_drop(remark_factor)) 
+
+data_act |>
+  ggplot( aes( x = datetim, y = glucose, group = remark_factor)) +
+  theme_minimal() +
+  geom_point() +
+  geom_line() +
+  geom_vline(data = data_act |> 
+               group_by(remark_factor) |> 
+               slice(1),
+             mapping = aes( xintercept = datetim - minutes(delta_time_remark )),
+             color = "red"
+  ) +
+  facet_wrap( facets = "remark_factor", scales = "free")
+
+```
