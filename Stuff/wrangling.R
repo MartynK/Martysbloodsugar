@@ -1,4 +1,4 @@
-# Attempting to read the xdrip data
+# Attempting to read and wrangle the xdrip data
 # Turns out everything was exported
 # NOTE: THE DATA IS MISCALIBRATED!!!
 
@@ -85,42 +85,19 @@ for (i in 1:nrow(dat_comment)) {
 # Putting the remark's information in the factor
 dat_out$remark_factor <- factor(dat_out$remark_factor,labels = dat_comment$REMARK)
 
+# Loading/converting the sleep data
+dat_sleep <- here::here("Data","Xdrip","Sleep_times.xlsx") |>
+               openxlsx::read.xlsx(startRow = 2, 
+                                   detectDates = TRUE) |>
+               mutate( Fell_asleep = as_datetime(Date + Fell_asleep),
+                       Woken_up    = as_datetime(Date + Woken_up + 1))
+# dat_out |>
+#   mutate( state = if(datetim < dat_sleep$Fell_asleep[] ))
+
+
 # Exporting the transformed data
 openxlsx::write.xlsx(dat_out, 
                      file = here::here("Export",
                                        "transformed_data.xlsx"))
 save(dat_out, file = here::here("Export",
                                 "xdrip_data.Rdata"))
-
-
-
-# Plotting
-
-dat_out |>
-  ggplot( aes( x = datetim, y = glucose)) +
-  theme_minimal() +
-  geom_point()
-
-dat |>
-  ggplot( aes( x = datetim, y = as.numeric(TIME), color = DAY)) +
-  geom_point()
-
-dat |>
-  ggplot( aes( x = as.numeric(TIME), y = glucose, color = DAY)) +
-  geom_point() +
-  geom_smooth(color = "red")
-
-dat_out |>
-  filter( is.na(remark_factor) == FALSE) |>
-  ggplot( aes( x = datetim, y = glucose, group = remark_factor)) +
-  theme_minimal() +
-  geom_point() +
-  geom_line() +
-  geom_vline(data = dat_out |> 
-               group_by(remark_factor) |> 
-               slice(1),
-             mapping = aes( xintercept = datetim - minutes(delta_time_remark )),
-             color = "red"
-             ) +
-  facet_wrap( facets = "remark_factor", scales = "free")
-
