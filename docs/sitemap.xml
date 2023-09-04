@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>http://yourname.github.io/yourpackage/404.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/articles/Report.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/authors.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/index.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/LICENSE-text.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/LICENSE.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>http://yourname.github.io/yourpackage/reference/read_xdrip_data.html</loc>
+  </url>
+</urlset>

@@ -1,0 +1,15 @@
+url: http://yourname.github.io/yourpackage
+navbar:
+  type: default
+  right:
+    - text: "GitHub"
+      href: https://github.com/MartynK/Martysbloodsugar/
+    - text: "Vignettes"
+      href: articles/
+news:
+  title: News
+  description: >
+    Updates about the yourpackage package.
+home:
+  title: An Amazing R package
+  description: This is a great package that does many things. 
