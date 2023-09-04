@@ -12,6 +12,13 @@ R/ has the "iterations" on the code in .r scripts.
 
 # Notes
 
-Ran *usethis::use_mit_license("Márton Kiss")* to set up the licence. 
-Ran *devtools::document()* to make the NAMESPACE document. 
-Use *devtools::test()* to run the unit test(s).
+Ran *usethis::use_mit_license("Márton Kiss")* to set up the licence.  
+
+Ran *devtools::document()* to make the NAMESPACE document.  
+
+Use *devtools::test()* to run the unit test(s).  
+
+Use *devtools::build_vignettes()* to refresh the .rmd stuff in the vignettes folder.  
+
+Website made by *pkgdown::build_site()*.
+
