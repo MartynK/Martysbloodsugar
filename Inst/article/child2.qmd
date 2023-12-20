@@ -1,0 +1,477 @@
+---
+title: "child2"
+format: docx
+editor: visual
+---
+
+# Examples for quick reference
+
+## Tables
+
+```{r}
+
+d_bg %>%
+  filter( is.na(sensor) == FALSE,
+          bad == 0) %>%
+  ggplot(aes(x=bg,y=bg_cbgm)) +
+    theme_bw() +
+    geom_abline(slope=1,intercept =0, color="red") +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    geom_smooth( se = FALSE, color = "deepskyblue", 
+                 method = "loess", span = 1.25) +
+    facet_wrap(facets="sensor") +
+    labs( title = "Calibration points per sensor",
+          y = "CGM value",
+          x = "Stick value")
+
+```
+
+ 
+
+```{r}
+
+data %>%
+  ggplot(aes(x=value2,y=value3)) +
+  theme_bw() +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Calibrated value from app",
+       y = "Calibrated value based on model")
+
+```
+
+ \
+
+```{r}
+
+data %>%
+  ggplot(aes(x=time,y=value3)) +
+    theme_bw() +
+    geom_point() +
+    geom_line() +
+    facet_wrap(facets="sensor",scales = "free_x")
+
+```
+
+```{r}
+
+plots <- list()
+dayz  <- unique(as.Date(data$time))
+for ( i in 1:length(dayz)) {
+  tim_act <- as_datetime(dayz[i])
+
+  tim_lim <- c(tim_act, tim_act + 3600 * 24)
+  
+  plots[[as.character(tim_lim[1])]] <-
+    data %>%
+      ggplot(aes(x=time,y=value2)) +
+       theme_bw() +
+       geom_line() +
+       geom_point() +
+       geom_point(data = d_bg, mapping = aes( y = bg), color = "red") +
+       geom_point(data = d_bg, mapping = aes( y = bg_cbgm), color = "green") +
+       scale_x_datetime(limits = tim_lim)
+
+}
+plots <- plots[order(names(plots))]
+
+do.call(ggpubr::ggarrange, c(plots, list( ncol = 6,nrow = 3)))
+
+```
+
+ \
+
+```{r}
+
+data %>%
+  ggplot(aes(x=time_of_day,y=value3)) +
+    theme_bw() +
+    geom_line(alpha=.2) +
+    geom_point() +
+    geom_smooth() +
+    geom_smooth(method = "loess",span=.1,color="green") +
+    geom_point(data = d_bg, mapping = aes( y = bg), color = "red")
+    
+
+```
+
+```{r}
+
+data %>%
+  ggplot(aes(x=time_of_day,y=value3)) +
+    theme_bw() +
+    geom_line(alpha=.2) +
+    geom_point() +
+    geom_smooth() +
+    geom_smooth(method = "loess",span=.1,color="green") +
+    geom_point(data = d_bg, mapping = aes( y = bg), color = "red") +
+    labs(x = "Time of day",
+         y = "CGM reading")
+    
+```
+
+
+```{r}
+
+mod2 <- kmeans(dat_mvt2[,2:4],centers = 3)
+
+dat_mvt2$clust <- mod2$cluster
+
+# 3D scatter plot
+scatterplot3d::scatterplot3d(dat_mvt2[,2], dat_mvt2[,3], dat_mvt2[,4], 
+              color = dat_mvt2$clust, pch = 19)
+
+```
+
+
+```{r}
+
+##############
+# Periodogram stuff
+
+periodogr <- 
+  data.frame( time =
+                seq(
+                  min(data_w_notes$time),
+                  max(data_w_notes$time),
+                  by = 60
+                ))
+periodogr$val <- f(periodogr$time)
+periodogr_ts <- ts(periodogr)
+
+periodogram_b <-
+  spec.pgram(periodogr_ts, 
+             spans = c(7,9),
+             taper = 0.005,
+             #fast = FALSE
+             #demean = FALSE,
+             #detrend = FALSE
+  )
+
+data.frame( freq = periodogram_b$freq
+            ,spec = periodogram_b$spec[,1]
+) %>%
+  ggplot(aes( x = 1/freq, y = spec)) +
+  theme_bw() +
+  scale_x_log10(limits = c(2,1500),
+                breaks = c(10,20,30,60,120,240,1000,1440)) +
+  scale_y_log10() +
+  geom_line() +
+  geom_vline(xintercept = 20, color = "salmon")
+
+```
+
+
+```{r}
+
+data_w_notes <- data_w_notes[c(-3604,-4626)]
+
+mod_notes <- lm(value3 ~ notes : bs( note_time_scaled, 
+                                     Boundary.knots = c(0,1),
+                                     knots = seq(0,1,length.out=7)[2:6])
+                + notes_category
+                + ns( tod, df = 4)
+                #+ fourier20[,1]
+                , data_w_notes)
+
+data_w_notes$resid <- mod_notes$residuals
+data_w_notes$pr    <- predict(mod_notes)
+data_w_notes$pr_std <- predict(mod_notes, 
+                               newdata = data_w_notes %>% 
+                                 mutate(tod = 1))
+
+```
+
+
+```{r}
+
+#summary(mod_notes)
+anova(mod_notes) %>% as.data.frame() %>% kableExtra::kbl()
+
+
+
+cooks.distance(mod_notes) %>% 
+  sort(decreasing = TRUE) %>% 
+  head(n = 10) %>% 
+  as.data.frame() %>%
+  `colnames<-`("Most extreme Cook's distances") %>%
+  kableExtra::kbl()
+
+
+plot(acf(mod_notes$residuals,lag = 100))
+plot(pacf(mod_notes$residuals))
+
+plot(mod_notes,1)
+plot(mod_notes,2)
+plot(mod_notes,3)
+
+```
+
+
+```{r}
+
+pr <- expand.grid( notes = unique(data_w_notes$notes),
+                   time_note = seq(0,43200,length.out = 120),
+                   tod = seq(1,3600*24,length.out = 10))
+
+pr <- 
+  left_join( pr, 
+             notes_max_time %>% 
+               group_by(notes) %>%
+               arrange(desc(time_note)) %>%
+               slice(1) %>%
+               rename( time_note_max = "time_note"), 
+             by= c("notes")) %>%
+  mutate(note_time_scaled = time_note / time_note_max) %>%
+  filter(time_note <= time_note_max ) %>%
+  mutate(bin = cut(time_note_max, 
+                   breaks = 6, 
+                   #labels = c("Bin1", "Bin2", "Bin3"),
+                   include.lowest = TRUE)) %>% 
+  filter(notes != "none") %>% 
+  mutate(notes=forcats::fct_drop(notes)) %>%
+  left_join( y = data_w_notes %>% select(notes,notes_category) %>%
+               group_by(notes) %>% slice(1),
+             by = "notes")
+
+pr$pr. <- predict(mod_notes, newdata = pr)
+
+pr <- pr %>%
+  filter( pr. > 0,
+          pr. < 15)
+
+```
+
+
+```{r}
+
+pr %>%
+  ggplot(aes(x = pr.)) +
+  theme_bw() +
+  geom_histogram(aes(y = ..density..), alpha = .5, fill = "salmon4", 
+                 color = "red", binwidth = .1) +
+  scale_x_continuous(limits = c(0, 15)) +
+  geom_histogram(data = data_w_notes, 
+                 mapping = aes(x = value3, y = ..density..),
+                 fill = "deepskyblue", 
+                 color = "deepskyblue3", 
+                 alpha = .5, binwidth = .1) +
+  labs( x = "",
+        title = "Histograms of observed (blue) / predicted (red) values")
+
+```
+
+
+
+```{r}
+
+pr %>%
+  filter(time_note == 0) %>%
+  ggplot(aes(x = hms::hms(tod), y = pr., color = notes_category)) +
+    theme_bw() +
+    geom_point() +
+    geom_line() +
+    labs( x = "Time of day",
+          y = "Predicted value")
+
+```
+
+
+```{r}
+
+i <- 1
+j <- i+9
+notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+pr %>%
+  filter(tod == 1) %>%
+  filter(notes_category == "food") %>%
+  filter( notes %in% notes_act) %>%
+  ggplot( aes( x = time_note/3600, y = pr., 
+               color = notes
+               #, group = notes
+               )) +
+    theme_bw() +
+    geom_line() +
+  geom_point(data = data_w_notes %>% 
+               filter( notes %in% notes_act), 
+             mapping = aes(x = time_note/3600, 
+                           y = pr_std + resid),
+             alpha = .75,
+             size = .75) +
+  geom_hline(yintercept = 4.9, color = "salmon4") +
+  facet_wrap(facets  = vars(notes),
+             nrow = 2,
+             ncol = 5,
+             scale = "free_x") +
+  labs(x = "Time since meal (hours)",
+       y = "Predicted values")
+
+
+```
+
+```{r}
+
+i <- 11
+j <- i+9
+notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+pr %>%
+  filter(tod == 1) %>%
+  filter(notes_category == "food") %>%
+  filter( notes %in% notes_act) %>%
+  ggplot( aes( x = time_note/3600, y = pr., 
+               color = notes
+               #, group = notes
+               )) +
+    theme_bw() +
+    geom_line() +
+  geom_point(data = data_w_notes %>% 
+               filter( notes %in% notes_act), 
+             mapping = aes(x = time_note/3600, 
+                           y = pr_std + resid),
+             alpha = .75,
+             size = .75) +
+  geom_hline(yintercept = 4.9, color = "salmon4") +
+  facet_wrap(facets  = vars(notes),
+             nrow = 2,
+             ncol = 5,
+             scale = "free_x") +
+  labs(x = "Time since meal (hours)",
+       y = "Predicted values")
+
+
+```
+
+
+```{r}
+
+i <- 21
+j <- i+9
+notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+pr %>%
+  filter(tod == 1) %>%
+  filter(notes_category == "food") %>%
+  filter( notes %in% notes_act) %>%
+  ggplot( aes( x = time_note/3600, y = pr., 
+               color = notes
+               #, group = notes
+               )) +
+    theme_bw() +
+    geom_line() +
+  geom_point(data = data_w_notes %>% 
+               filter( notes %in% notes_act), 
+             mapping = aes(x = time_note/3600, 
+                           y = pr_std + resid),
+             alpha = .75,
+             size = .75) +
+  geom_hline(yintercept = 4.9, color = "salmon4") +
+  facet_wrap(facets  = vars(notes),
+             nrow = 2,
+             ncol = 5,
+             scale = "free_x") +
+  labs(x = "Time since meal (hours)",
+       y = "Predicted values")
+
+
+```
+
+```{r}
+
+i <- 31
+j <- i+9
+notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+pr %>%
+  filter(tod == 1) %>%
+  filter(notes_category == "food") %>%
+  filter( notes %in% notes_act) %>%
+  ggplot( aes( x = time_note/3600, y = pr., 
+               color = notes
+               #, group = notes
+               )) +
+    theme_bw() +
+    geom_line() +
+  geom_point(data = data_w_notes %>% 
+               filter( notes %in% notes_act), 
+             mapping = aes(x = time_note/3600, 
+                           y = pr_std + resid),
+             alpha = .75,
+             size = .75) +
+  geom_hline(yintercept = 4.9, color = "salmon4") +
+  facet_wrap(facets  = vars(notes),
+             nrow = 2,
+             ncol = 5,
+             scale = "free_x") +
+  labs(x = "Time since meal (hours)",
+       y = "Predicted values")
+
+
+```
+
+
+```{r}
+
+i <- 41
+j <- i+9
+notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+pr %>%
+  filter(tod == 1) %>%
+  filter(notes_category == "food") %>%
+  filter( notes %in% notes_act) %>%
+  ggplot( aes( x = time_note/3600, y = pr., 
+               color = notes
+               #, group = notes
+               )) +
+    theme_bw() +
+    geom_line() +
+  geom_point(data = data_w_notes %>% 
+               filter( notes %in% notes_act), 
+             mapping = aes(x = time_note/3600, 
+                           y = pr_std + resid),
+             alpha = .75,
+             size = .75) +
+  geom_hline(yintercept = 4.9, color = "salmon4") +
+  facet_wrap(facets  = vars(notes),
+             nrow = 2,
+             ncol = 5,
+             scale = "free_x") +
+  labs(x = "Time since meal (hours)",
+       y = "Predicted values")
+
+
+```
+
+
+```{r}
+
+i <- 51
+j <- i+9
+notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+pr %>%
+  filter(tod == 1) %>%
+  filter(notes_category == "food") %>%
+  filter( notes %in% notes_act) %>%
+  ggplot( aes( x = time_note/3600, y = pr., 
+               color = notes
+               #, group = notes
+               )) +
+    theme_bw() +
+    geom_line() +
+  geom_point(data = data_w_notes %>% 
+               filter( notes %in% notes_act), 
+             mapping = aes(x = time_note/3600, 
+                           y = pr_std + resid),
+             alpha = .75,
+             size = .75) +
+  geom_hline(yintercept = 4.9, color = "salmon4") +
+  facet_wrap(facets  = vars(notes),
+             nrow = 2,
+             ncol = 5,
+             scale = "free_x") +
+  labs(x = "Time since meal (hours)",
+       y = "Predicted values")
+
+
+```
+
+
+

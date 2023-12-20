@@ -1,0 +1,25 @@
+---
+title: ""
+format: docx
+editor: visual
+---
+
+# Introduction
+
+  
+
+\[...\] It is my report template in Quarto. It has most Rmd features and can generate .docx. Table of Contents should be wrangled after that at the moment. PDF can be generated via Word (save as..). The auto-generated .html is nice too. Computationally intensive stuff should be referenced. None of this Vignette precompile nonsense I've been working so hard to implement :( Computationally intensive stuff should be referenced externally.
+
+# Description of the study
+
+ \
+
+\[...\]
+
+ 
+
+# Data extraction
+
+     
+
+\[...\]
