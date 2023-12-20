@@ -1,0 +1,21 @@
+---
+title: ""
+format: docx
+editor: visual
+---
+
+# Introduction
+
+ 
+
+I recently purchased two continuous glucose monitors as I am fascinated with its technology and health, nutrition & sports science in general.
+
+After having a blast watching the readings go up and down and going through the readings as any self-respecting biostatistician would, I would like to share my results.
+
+I have applied the 2 sensors about half a year apart and was monitoring them through xDrip+. The first was a Libre2 and the second was a Dexcom G6. The former needed calibrating with this setup, and I was learning on-the-fly which meant that my readings were all over the place.
+
+All of the glucose values are in *mmol/l*.
+
+# Data extraction
+
+xDrip+ outputs its database in a *.sqlite* format which is readable with the right package. My notes had to be hand-recoded for this analysis as half of it wasn't in English and was riddled with typos. Still, some entries just read something like 'lunch'.
