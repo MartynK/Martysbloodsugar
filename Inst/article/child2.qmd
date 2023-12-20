@@ -4,9 +4,12 @@ format: docx
 editor: visual
 ---
 
-# Examples for quick reference
+# Results
 
-## Tables
+## Calibration
+
+I have calibrated my sensors via fingertip measurements in a haphazard way. xDrip+ automatically advances the measurements by 10 minutes, due to the subcutaneous readings' lag (I've verified this, not shown here). I applied the calibration for the first sensor only, as the second one is supposedly calibrated by default and seemed pretty stable (after a considerable warm-up period).
+
 
 ```{r}
 
@@ -29,6 +32,8 @@ d_bg %>%
 
  
 
+Final calibration values shown below.
+
 ```{r}
 
 data %>%
@@ -41,18 +46,7 @@ data %>%
 
 ```
 
- \
-
-```{r}
-
-data %>%
-  ggplot(aes(x=time,y=value3)) +
-    theme_bw() +
-    geom_point() +
-    geom_line() +
-    facet_wrap(facets="sensor",scales = "free_x")
-
-```
+The calibration points along with their place in a given day are also shown (because I could).
 
 ```{r}
 
@@ -82,19 +76,27 @@ do.call(ggpubr::ggarrange, c(plots, list( ncol = 6,nrow = 3)))
 
  \
 
+## Raw results
+
+ \
+
+I've plotted my readings below. There is an apparent difference between the sensors but this also could be a calibration issue.   
+
 ```{r}
 
 data %>%
-  ggplot(aes(x=time_of_day,y=value3)) +
+  ggplot(aes(x=time,y=value3)) +
     theme_bw() +
-    geom_line(alpha=.2) +
     geom_point() +
-    geom_smooth() +
-    geom_smooth(method = "loess",span=.1,color="green") +
-    geom_point(data = d_bg, mapping = aes( y = bg), color = "red")
-    
+    geom_line() +
+    facet_wrap(facets="sensor",scales = "free_x") +
+    labs(y = "Glucose (mmol/l)")
 
 ```
+
+
+Plotting the results onto a 24 hour window gives the below picture. This of course is the result of my eating habits which are shall we say hard to quantify.  
+
 
 ```{r}
 
@@ -111,6 +113,16 @@ data %>%
     
 ```
 
+## Multivariate approach
+
+Tried to visualize the readings in the following way:
+
+ - meals were logged, so the time since last meal could be determined at each timepoint
+ - elevation in blood glucose were listed 45; 60; 90 minutes after meals, and
+ - k-means clustering was attempted in order to identify potential interesting patterns
+ 
+The patterns alas were proven to be moderately interesting, with some types of meals influencing blood glucose minimally or massively but overall, in a uniform pattern.
+
 
 ```{r}
 
@@ -123,6 +135,10 @@ scatterplot3d::scatterplot3d(dat_mvt2[,2], dat_mvt2[,3], dat_mvt2[,4],
               color = dat_mvt2$clust, pch = 19)
 
 ```
+
+## Recurring oscillations
+
+Anticipating the problem of high autocorrelation, and taking into consideration the pulsatile nature of hormone release in general, I investigated the results with a periodogram (searching for oscillations as a function of frequency). Though noisy, a pattern of oscillations every 20 minutes may be interesting. However, inserting an oscillating sine/cosine wave at this frequency did not improve the models (see later).  
 
 
 ```{r}
@@ -147,6 +163,7 @@ periodogram_b <-
              #fast = FALSE
              #demean = FALSE,
              #detrend = FALSE
+             plot = FALSE
   )
 
 data.frame( freq = periodogram_b$freq
@@ -162,10 +179,54 @@ data.frame( freq = periodogram_b$freq
 
 ```
 
+## Modelling
+
+A linear model was fitted with the following idea:
+ - A circadian cycle was fitted with a small degree-of-freedom natural spline
+ - Time since the last event was modelled with an additional spline on top of the circadian rythm
+ 
+The results are far from perfect. Actual problems:
+
+ - Only interaction terms were included in order to better interpret the effect of various foods (the blood sugar level always originating from the same value). This is particularly bad because there may be lingering effects from the previous food effects.
+ - There are meals with few observations (because I ate some more after a short while). It is not appropriate to fit a large degree-of-freedom spline for them and 'sparser' splines should be specified (by hand in the model matrix).
+ - A better way of looking at things would be to model both time since last meal and any documented activities in addition to one another (at this current setup, an activity 'stops' the modelling of the food effect).  
+ 
+While there are some definite issues with this setup, and the distribution of the residuals are not too good, but the resulting model explains ~75% of the total variability and produces plausable graphs for the food/circadian effects.
 
 ```{r}
 
-data_w_notes <- data_w_notes[c(-3604,-4626)]
+# Outliers based on Cook distance
+data_w_notes <- data_w_notes[c(-3604,-4623,-4624,-4626),]
+
+mod_notes_matrix <- model.matrix( ~ notes : bs( note_time_scaled, 
+                                     Boundary.knots = c(0,1),
+                                     knots = seq(0,1,length.out=7)[2:6])
+                + notes_category
+                + ns( tod, df = 4)
+                - 1
+                , data_w_notes) %>%
+  as.data.frame() %>%
+  bind_cols(data_w_notes %>% 
+              dplyr::select(value3), .)
+
+new_colnames <- colnames(mod_notes_matrix)
+
+# Handle special cases for first few columns
+new_colnames[1:4] <- c("value3", "N_activity", "N_food", "N_none")
+
+# Apply renaming for the rest of the columns
+new_colnames[5:length(new_colnames)] <- 
+  gsub("notes", "", new_colnames[5:length(new_colnames)])
+
+new_colnames[5:length(new_colnames)] <- 
+  gsub("\\(.*\\)", "", new_colnames[5:length(new_colnames)])
+
+
+# Apply the new column names to the matrix
+colnames(mod_notes_matrix) <- new_colnames
+
+mod_notes_nice_colnames <- lm(value3 ~ . 
+                , as.data.frame(mod_notes_matrix))
 
 mod_notes <- lm(value3 ~ notes : bs( note_time_scaled, 
                                      Boundary.knots = c(0,1),
@@ -186,10 +247,14 @@ data_w_notes$pr_std <- predict(mod_notes,
 
 ```{r}
 
-#summary(mod_notes)
+
 anova(mod_notes) %>% as.data.frame() %>% kableExtra::kbl()
 
 
+```
+
+
+```{r}
 
 cooks.distance(mod_notes) %>% 
   sort(decreasing = TRUE) %>% 
@@ -200,7 +265,7 @@ cooks.distance(mod_notes) %>%
 
 
 plot(acf(mod_notes$residuals,lag = 100))
-plot(pacf(mod_notes$residuals))
+plot(pacf(mod_notes$residuals,lag = 100))
 
 plot(mod_notes,1)
 plot(mod_notes,2)
@@ -474,4 +539,8 @@ pr %>%
 ```
 
 
+```{r}
 
+sjPlot::tab_model(mod_notes_nice_colnames)
+
+```

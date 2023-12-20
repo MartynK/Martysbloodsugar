@@ -12,7 +12,7 @@ prefer-html: true
 toc: true
 toc-depth: 2
 execute:
-  echo: false
+  echo: true
   warning: false
 ---
 
@@ -41,7 +41,7 @@ load_all_Rdata(directory=here::here("inst","example_quarto","backend")) # Load s
 
 # Remarks
 
-### MD5 checksum of the database used
+<!-- ### MD5 checksum of the database used -->
 
 ```{r, comment='', results='asis'}
 #tools::md5sum(fil) # %>% as.character # Uncomment reporting path is not desirable
