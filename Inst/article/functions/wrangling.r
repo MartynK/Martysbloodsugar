@@ -151,27 +151,62 @@ dat_mvt2 <- cbind(   dat_mvt[complete.cases(dat_mvt),1], dat_mvt2[,2:4])
 data_w_notes <- 
   difference_left_join(data, 
                        d_notes_in %>% 
-                         filter(notes_category != "sensation") %>%
-                         select(time, notes_new,
-                                notes_category) %>%
+                         filter(notes_category == "food") %>%
+                         select(time, notes_new) %>%
                          dplyr::rename(time_note = "time",
                                        notes = "notes_new"),
                        by = c("time" = "time_note"),
-                       max_dist = 5*60) %>% # 7 minutes in seconds
+                       max_dist = 5*60) %>% # 5 minutes in seconds
+  difference_left_join(x = ., 
+                       y = d_notes_in %>% 
+                         filter(notes_category == "activity") %>%
+                         select(time, notes_new) %>%
+                         dplyr::rename(time_note_activity = "time",
+                                       notes_activity = "notes_new"),
+                       by = c("time" = "time_note_activity"),
+                       max_dist = 5*60) %>% # 5 minutes in seconds
+  difference_left_join(x = ., 
+                       y = d_notes_in %>% 
+                         filter(notes_category == "sensation") %>%
+                         select(time, notes_new) %>%
+                         dplyr::rename(time_note_sensation = "time",
+                                       notes_sensation = "notes_new"),
+                       by = c("time" = "time_note_sensation"),
+                       max_dist = 5*60) %>% # 5 minutes in seconds
   arrange(time) %>%
-  tidyr::fill(notes, time_note, notes_category) %>%
+  tidyr::fill(notes, notes_activity, notes_sensation, 
+              time_note, time_note_activity, time_note_sensation) %>%
   mutate( time_old = time_note,
           time_note = as.numeric(time - time_note),
           time_note = ifelse( is.na(time_note) == TRUE,0,time_note),
+          
+          time_note_activity = as.numeric(time - time_note_activity),
+          time_note_activity = ifelse( is.na(time_note_activity) == TRUE,
+                                       0,time_note_activity),
+          time_note_sensation = as.numeric(time - time_note_sensation),
+          time_note_sensation = ifelse( is.na(time_note_sensation) == TRUE,
+                                       0,time_note_sensation),
+          
           notes = ifelse( time_note > 43200 |
                             time_note < 0 
                           , "none", as.character(notes)),
           notes = ifelse( is.na(notes) == TRUE, "none", notes),
-          notes_category = ifelse( is.na(notes_category) == TRUE, 
-                                   "none", as.character(notes_category))
-  ) %>%
+          notes_activity = ifelse( time_note_activity > 14400 | # 4 hours
+                            time_note_activity < 0 
+                          , "none", as.character(notes_activity)),
+          notes_activity = ifelse( is.na(notes_activity) == TRUE, 
+                                   "none", notes_activity),
+          notes_sensation = ifelse( time_note_sensation > 43200 |
+                                     time_note_sensation < 0 
+                                   , "none", as.character(notes_sensation)),
+          notes_sensation = ifelse( is.na(notes_sensation) == TRUE, 
+                                   "none", notes_sensation)) %>%
   mutate(
     time_note = ifelse( notes == "none" , 1,time_note),
+    time_note_activity = ifelse( notes_activity == "none" , 
+                                 1, time_note_activity),
+    time_note_sensation = ifelse( notes_sensation == "none" , 
+                                 1, time_note_sensation),
     tod = as.numeric(time_of_day),
     #fourier20 = fourier20
   )
@@ -184,13 +219,26 @@ notes_max_time <-
   ungroup() %>%
   dplyr::select(notes,time_note,time_old)
 
+notes_activities_max_time <- 
+  data_w_notes %>%
+  group_by(notes_activity, time_old) %>%
+  arrange(desc(time_note_activity)) %>%
+  slice(1) %>%
+  ungroup() %>%
+  dplyr::select(notes_activity,time_note_activity,time_old)
+
 data_w_notes <- 
   left_join( data_w_notes, 
              notes_max_time %>% 
                rename( time_note_max = "time_note"), 
              by= c("notes", "time_old")) %>%
-  mutate( time_note = ifelse( notes == "none" , 0,time_note),
-          note_time_scaled = time_note / time_note_max)
+  left_join( ., 
+             notes_activities_max_time %>% 
+               rename( time_note_max_activity = "time_note_activity"), 
+             by= c("notes_activity", "time_old")) %>%
+  mutate( time_note_activity = ifelse( notes_activity == "none" , 0,time_note_activity),
+          note_time_scaled = time_note / time_note_max,
+          note_time_scaled_activity = time_note_activity / time_note_max_activity)
 
 
 fourier20 <- 

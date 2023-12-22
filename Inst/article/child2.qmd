@@ -10,7 +10,6 @@ editor: visual
 
 I have calibrated my sensors via fingertip measurements in a haphazard way. xDrip+ automatically advances the measurements by 10 minutes, due to the subcutaneous readings' lag (I've verified this, not shown here). I applied the calibration for the first sensor only, as the second one is supposedly calibrated by default and seemed pretty stable (after a considerable warm-up period).
 
-
 ```{r}
 
 d_bg %>%
@@ -80,7 +79,7 @@ do.call(ggpubr::ggarrange, c(plots, list( ncol = 6,nrow = 3)))
 
  \
 
-I've plotted my readings below. There is an apparent difference between the sensors but this also could be a calibration issue.   
+I've plotted my readings below. There is an apparent difference between the sensors but this also could be a calibration issue.
 
 ```{r}
 
@@ -94,9 +93,7 @@ data %>%
 
 ```
 
-
-Plotting the results onto a 24 hour window gives the below picture. This of course is the result of my eating habits which are shall we say hard to quantify.  
-
+Plotting the results onto a 24 hour window gives the below picture. This of course is the result of my eating habits which are shall we say hard to quantify.
 
 ```{r}
 
@@ -117,12 +114,11 @@ data %>%
 
 Tried to visualize the readings in the following way:
 
- - meals were logged, so the time since last meal could be determined at each timepoint
- - elevation in blood glucose were listed 45; 60; 90 minutes after meals, and
- - k-means clustering was attempted in order to identify potential interesting patterns
- 
-The patterns alas were proven to be moderately interesting, with some types of meals influencing blood glucose minimally or massively but overall, in a uniform pattern.
+-   meals were logged, so the time since last meal could be determined at each timepoint
+-   elevation in blood glucose were listed 45; 60; 90 minutes after meals, and
+-   k-means clustering was attempted in order to identify potential interesting patterns
 
+The patterns alas were proven to be moderately interesting, with some types of meals influencing blood glucose minimally or massively but overall, in a uniform pattern.
 
 ```{r}
 
@@ -138,8 +134,7 @@ scatterplot3d::scatterplot3d(dat_mvt2[,2], dat_mvt2[,3], dat_mvt2[,4],
 
 ## Recurring oscillations
 
-Anticipating the problem of high autocorrelation, and taking into consideration the pulsatile nature of hormone release in general, I investigated the results with a periodogram (searching for oscillations as a function of frequency). Though noisy, a pattern of oscillations every 20 minutes may be interesting. However, inserting an oscillating sine/cosine wave at this frequency did not improve the models (see later).  
-
+Anticipating the problem of high autocorrelation, and taking into consideration the pulsatile nature of hormone release in general, I investigated the results with a periodogram (searching for oscillations as a function of frequency). Though noisy, a pattern of oscillations every 20 minutes may be interesting. However, inserting an oscillating sine/cosine wave at this frequency did not improve the models (see later).
 
 ```{r}
 
@@ -181,27 +176,27 @@ data.frame( freq = periodogram_b$freq
 
 ## Modelling
 
-A linear model was fitted with the following idea:
- - A circadian cycle was fitted with a small degree-of-freedom natural spline
- - Time since the last event was modelled with an additional spline on top of the circadian rythm
- 
+A linear model was fitted with the following idea: - A circadian cycle was fitted with a small degree-of-freedom natural spline - Time since the last event was modelled with an additional spline on top of the circadian rhythm
+
 The results are far from perfect. Actual problems:
 
- - Only interaction terms were included in order to better interpret the effect of various foods (the blood sugar level always originating from the same value). This is particularly bad because there may be lingering effects from the previous food effects.
- - There are meals with few observations (because I ate some more after a short while). It is not appropriate to fit a large degree-of-freedom spline for them and 'sparser' splines should be specified (by hand in the model matrix).
- - A better way of looking at things would be to model both time since last meal and any documented activities in addition to one another (at this current setup, an activity 'stops' the modelling of the food effect).  
- 
-While there are some definite issues with this setup, and the distribution of the residuals are not too good, but the resulting model explains ~75% of the total variability and produces plausable graphs for the food/circadian effects.
+-   Only interaction terms were included in order to better interpret the effect of various foods (the blood sugar level always originating from the same value). This is particularly bad because there may be lingering effects from the previous food effects.
+-   There are meals with few observations (because I ate some more after a short while). It is not appropriate to fit a large degree-of-freedom spline for them and 'sparser' splines should be specified (by hand in the model matrix).
+-   A better way of looking at things would be to model both time since last meal and any documented activities in addition to one another (at this current setup, an activity 'stops' the modelling of the food effect).
+
+While there are some definite issues with this setup, and the distribution of the residuals are not too good, but the resulting model explains \~75% of the total variability and produces plausable graphs for the food/circadian effects.
 
 ```{r}
 
 # Outliers based on Cook distance
 data_w_notes <- data_w_notes[c(-3604,-4623,-4624,-4626),]
 
-mod_notes_matrix <- model.matrix( ~ notes : bs( note_time_scaled, 
+mod_notes_matrix <- model.matrix( ~ notes * bs( note_time_scaled, 
                                      Boundary.knots = c(0,1),
                                      knots = seq(0,1,length.out=7)[2:6])
-                + notes_category
+                + notes_activity * bs( note_time_scaled_activity, 
+                    Boundary.knots = c(0,1),
+                    knots = seq(0,1,length.out=7)[2:6])
                 + ns( tod, df = 4)
                 - 1
                 , data_w_notes) %>%
@@ -218,8 +213,8 @@ new_colnames[1:4] <- c("value3", "N_activity", "N_food", "N_none")
 new_colnames[5:length(new_colnames)] <- 
   gsub("notes", "", new_colnames[5:length(new_colnames)])
 
-new_colnames[5:length(new_colnames)] <- 
-  gsub("\\(.*\\)", "", new_colnames[5:length(new_colnames)])
+# new_colnames[5:length(new_colnames)] <- 
+#   gsub("\\(.*\\)", "", new_colnames[5:length(new_colnames)])
 
 
 # Apply the new column names to the matrix
@@ -228,10 +223,13 @@ colnames(mod_notes_matrix) <- new_colnames
 mod_notes_nice_colnames <- lm(value3 ~ . 
                 , as.data.frame(mod_notes_matrix))
 
-mod_notes <- lm(value3 ~ notes : bs( note_time_scaled, 
+mod_notes <- lm(value3 ~ 
+                  notes * bs( note_time_scaled, 
                                      Boundary.knots = c(0,1),
                                      knots = seq(0,1,length.out=7)[2:6])
-                + notes_category
+                + notes_activity * bs( note_time_scaled_activity, 
+                    Boundary.knots = c(0,1),
+                    knots = seq(0,1,length.out=7)[2:6])
                 + ns( tod, df = 4)
                 #+ fourier20[,1]
                 , data_w_notes)
@@ -240,10 +238,11 @@ data_w_notes$resid <- mod_notes$residuals
 data_w_notes$pr    <- predict(mod_notes)
 data_w_notes$pr_std <- predict(mod_notes, 
                                newdata = data_w_notes %>% 
-                                 mutate(tod = 1))
+                                 mutate(tod = 1,
+                                        notes_activity = 'none',
+                                        note_time_scaled_activity = 0))
 
 ```
-
 
 ```{r}
 
@@ -252,7 +251,6 @@ anova(mod_notes) %>% as.data.frame() %>% kableExtra::kbl()
 
 
 ```
-
 
 ```{r}
 
@@ -273,11 +271,12 @@ plot(mod_notes,3)
 
 ```
 
-
 ```{r}
 
 pr <- expand.grid( notes = unique(data_w_notes$notes),
                    time_note = seq(0,43200,length.out = 120),
+                   notes_activity = "none",
+                   note_time_scaled_activity = 0,
                    tod = seq(1,3600*24,length.out = 10))
 
 pr <- 
@@ -295,10 +294,10 @@ pr <-
                    #labels = c("Bin1", "Bin2", "Bin3"),
                    include.lowest = TRUE)) %>% 
   filter(notes != "none") %>% 
-  mutate(notes=forcats::fct_drop(notes)) %>%
-  left_join( y = data_w_notes %>% select(notes,notes_category) %>%
-               group_by(notes) %>% slice(1),
-             by = "notes")
+  mutate(notes=forcats::fct_drop(notes)) #%>%
+  # left_join( y = data_w_notes %>% select(notes,notes_category) %>%
+  #              group_by(notes) %>% slice(1),
+  #            by = "notes")
 
 pr$pr. <- predict(mod_notes, newdata = pr)
 
@@ -307,7 +306,6 @@ pr <- pr %>%
           pr. < 15)
 
 ```
-
 
 ```{r}
 
@@ -327,13 +325,11 @@ pr %>%
 
 ```
 
-
-
 ```{r}
 
 pr %>%
   filter(time_note == 0) %>%
-  ggplot(aes(x = hms::hms(tod), y = pr., color = notes_category)) +
+  ggplot(aes(x = hms::hms(tod), y = pr.)) +
     theme_bw() +
     geom_point() +
     geom_line() +
@@ -342,15 +338,13 @@ pr %>%
 
 ```
 
-
 ```{r}
 
 i <- 1
 j <- i+9
-notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+notes_act <- unique(sort(pr$notes))[i:j]
 pr %>%
   filter(tod == 1) %>%
-  filter(notes_category == "food") %>%
   filter( notes %in% notes_act) %>%
   ggplot( aes( x = time_note/3600, y = pr., 
                color = notes
@@ -379,10 +373,9 @@ pr %>%
 
 i <- 11
 j <- i+9
-notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+notes_act <- unique(sort(pr$notes))[i:j]
 pr %>%
   filter(tod == 1) %>%
-  filter(notes_category == "food") %>%
   filter( notes %in% notes_act) %>%
   ggplot( aes( x = time_note/3600, y = pr., 
                color = notes
@@ -407,15 +400,13 @@ pr %>%
 
 ```
 
-
 ```{r}
 
 i <- 21
 j <- i+9
-notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+notes_act <- unique(sort(pr$notes))[i:j]
 pr %>%
   filter(tod == 1) %>%
-  filter(notes_category == "food") %>%
   filter( notes %in% notes_act) %>%
   ggplot( aes( x = time_note/3600, y = pr., 
                color = notes
@@ -444,10 +435,9 @@ pr %>%
 
 i <- 31
 j <- i+9
-notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+notes_act <- unique(sort(pr$notes))[i:j]
 pr %>%
   filter(tod == 1) %>%
-  filter(notes_category == "food") %>%
   filter( notes %in% notes_act) %>%
   ggplot( aes( x = time_note/3600, y = pr., 
                color = notes
@@ -471,16 +461,14 @@ pr %>%
 
 
 ```
-
 
 ```{r}
 
 i <- 41
 j <- i+9
-notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+notes_act <- unique(sort(pr$notes))[i:j]
 pr %>%
   filter(tod == 1) %>%
-  filter(notes_category == "food") %>%
   filter( notes %in% notes_act) %>%
   ggplot( aes( x = time_note/3600, y = pr., 
                color = notes
@@ -504,16 +492,14 @@ pr %>%
 
 
 ```
-
 
 ```{r}
 
 i <- 51
 j <- i+9
-notes_act <- unique(sort(pr$notes[pr$notes_category == "food"]))[i:j]
+notes_act <- unique(sort(pr$notes))[i:j]
 pr %>%
   filter(tod == 1) %>%
-  filter(notes_category == "food") %>%
   filter( notes %in% notes_act) %>%
   ggplot( aes( x = time_note/3600, y = pr., 
                color = notes
@@ -537,7 +523,6 @@ pr %>%
 
 
 ```
-
 
 ```{r}
 
