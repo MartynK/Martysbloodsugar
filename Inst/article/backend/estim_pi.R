@@ -1,4 +1,5 @@
-# Computationally intensive stuff
+# Monte Carlo estimation of π (computational demonstration)
+# Computationally intensive Monte Carlo simulation to estimate Pi using random sampling
 # Takes 2-3 sec on my system
 
 # Monte Carlo simulation to estimate Pi

@@ -1,5 +1,5 @@
 ---
-title: "CGM measurements of a health 30-something male"
+title: "CGM measurements of a healthy 30-something male"
 author: "Márton Kiss, MD"
 format:
   docx:

@@ -1,3 +1,7 @@
+# Sensor residual correlation analysis (duplicate)
+# Duplicate of Inst/article/backend/sensor_resid_corr.R - analyzes sensor residual patterns
+# Note: This is a duplicate file that should be consolidated with the backend version
+
 library(dplyr)
 library(ggplot2)
 

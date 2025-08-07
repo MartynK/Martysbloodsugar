@@ -1,4 +1,6 @@
-# Data wrangling
+# SQLite data processing pipeline for xDrip database exports
+# Main data processing pipeline that reads from newer xDrip SQLite database exports,
+# processes glucose measurements, and integrates with unreliable interval filtering
 unreliable_series <-
   here::here("Inst","extdata","unreliable_interval.xlsx") %>%
   readxl::read_excel()

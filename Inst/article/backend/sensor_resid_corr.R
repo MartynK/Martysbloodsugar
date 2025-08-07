@@ -1,3 +1,7 @@
+# Sensor residual correlation analysis
+# Analyzes correlation patterns in model residuals across different sensors
+# Requires pre-processed data_w_notes with predictions to run meaningful analysis
+
 library(dplyr)
 library(ggplot2)
 

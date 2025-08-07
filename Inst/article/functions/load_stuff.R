@@ -1,3 +1,7 @@
+# Library loading and knitr setup for report generation  
+# Loads all required packages and sets up knitr options for Quarto/RMarkdown documents
+# Common setup script sourced by analysis reports
+
 library(RSQLite)
 library(lubridate)
 library(ggplot2)
@@ -7,7 +11,7 @@ library(fuzzyjoin)
 
 
 knitr::opts_chunk$set(
-  # A nyers szöveg kimenetel elé ne tegyen '##'-t
+  # Don't prefix raw text output with '##'
   comment = NA,
   # Ne mutassa a kódokat
   echo = FALSE,

@@ -1,4 +1,6 @@
-# Plotting xdrip data
+# Glucose visualization script (iteration 2)
+# Plotting script that loads pre-processed xDrip data and creates glucose visualizations
+# Part of development iteration sequence - loads data from Export/xdrip_data.Rdata
 
 # loading libraries
 library(lubridate)

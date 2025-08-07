@@ -1,3 +1,7 @@
+# Unit tests for xDrip data processing function
+# Tests the read_xdrip_data() function to verify correct data frame structure,
+# column types, and expected data transformations from xDrip SQLite exports
+
 library(testthat)
 
 test_that("Data wrangling process works correctly", {

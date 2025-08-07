@@ -1,3 +1,7 @@
+# SQLite-based xDrip data processing (iteration 3)
+# Development iteration using SQLite to process xDrip database exports
+# Connects directly to xDrip SQLite databases and processes glucose measurements
+
 #install.packages("RSQLite")
 library(RSQLite)
 library(lubridate)

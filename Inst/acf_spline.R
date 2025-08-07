@@ -1,3 +1,7 @@
+# Autocorrelation function simulation with spline models
+# Simulates data with varying autocorrelation strength and fits natural spline models
+# to demonstrate the relationship between model residuals and autocorrelation patterns
+
 # Load necessary libraries
 library(splines)
 library(lmtest)
