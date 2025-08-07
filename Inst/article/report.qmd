@@ -20,12 +20,13 @@ execute:
 
 
 source( here::here( "Inst", "article", "functions", "load_stuff.r"))
-source( here::here( "Inst", "article", "functions", "wrangling.r"))
 
 # source_all_files(here::here("inst","example_quarto","backend")) # Run slow stuff; 
 ##recommend running separately
 
-load_all_Rdata(directory=here::here("inst","example_quarto","backend")) # Load slow suff's output
+load_all_Rdata(directory=here::here("Inst","article","backend")) # Load slow suff's output
+
+source( here::here( "Inst", "article", "functions", "wrangling.r"))
 
 ```
 
@@ -35,6 +36,11 @@ load_all_Rdata(directory=here::here("inst","example_quarto","backend")) # Load s
 \newpage
 
 ```{r, child = here::here("Inst", "article", "child2.qmd")}
+```
+
+\newpage
+
+```{r, child = here::here("Inst", "article", "child3.qmd")}
 ```
 
 \newpage

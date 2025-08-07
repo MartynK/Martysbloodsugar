@@ -5,7 +5,7 @@ unreliable_series <-
 
 con <- dbConnect(RSQLite::SQLite(), 
                  dbname = here::here("inst","extdata",
-                                     "Xdrip","export20231215-220504.sqlite"))
+                                     "Xdrip","export20231231-202409.sqlite"))
 dbListTables(con)
 
 
@@ -191,7 +191,7 @@ data_w_notes <-
                             time_note < 0 
                           , "none", as.character(notes)),
           notes = ifelse( is.na(notes) == TRUE, "none", notes),
-          notes_activity = ifelse( time_note_activity > 14400 | # 4 hours
+          notes_activity = ifelse( time_note_activity > 7200 | # 2 hours
                             time_note_activity < 0 
                           , "none", as.character(notes_activity)),
           notes_activity = ifelse( is.na(notes_activity) == TRUE, 
@@ -204,7 +204,7 @@ data_w_notes <-
   mutate(
     time_note = ifelse( notes == "none" , 1,time_note),
     time_note_activity = ifelse( notes_activity == "none" , 
-                                 1, time_note_activity),
+                                 1, time_note_activity), # 3 h
     time_note_sensation = ifelse( notes_sensation == "none" , 
                                  1, time_note_sensation),
     tod = as.numeric(time_of_day),
@@ -248,4 +248,24 @@ fourier20 <-
   forecast::fourier(K=1)
 
 #nrow(fourier20) - nrow(data_w_notes)
+
+notes_freqs <-
+  data_w_notes$notes %>% 
+    table() %>% 
+    as.data.frame() %>% 
+    arrange(Freq)
+
+#notes_freqs$Freq %>% log() %>% hist(.,breaks = 100)
+
+data_w_notes <-
+  data_w_notes %>%
+    mutate(notes_full = notes,
+           notes = ifelse( notes %in% 
+                             (notes_freqs %>% 
+                             filter(Freq <10) %>%
+                             .$.), "none", notes)) %>%
+  left_join( y = sensor_vars, by = "sensor") %>%
+  group_by(sensor) %>%
+  mutate( fourier_var = cos(((as.numeric(time - time[1]) + lag) / 60) / n))
+
 
