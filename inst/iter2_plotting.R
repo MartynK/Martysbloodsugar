@@ -1,6 +1,6 @@
 # Glucose visualization script (iteration 2)
 # Plotting script that loads pre-processed xDrip data and creates glucose visualizations
-# Part of development iteration sequence - loads data from Export/xdrip_data.Rdata
+# Part of development iteration sequence - loads data from inst/extdata/processed/xdrip_data.Rdata
 
 # loading libraries
 library(lubridate)
@@ -8,7 +8,7 @@ library(dplyr)
 library(ggplot2)
 
 
-load(here::here("Export","xdrip_data.Rdata"))
+load(here::here("inst","extdata","processed","xdrip_data.Rdata"))
 
 # Overall results
 dat_out |>
